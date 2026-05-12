@@ -1,6 +1,12 @@
 <template>
   <h1 class="fw-bold">Danh sách hợp đồng</h1>
-
+  <input
+    type="text"
+    class="form-control mb-2"
+    placeholder="Nhập từ khóa tìm kiếm"
+    v-model="keyword"
+    @keypress.enter="search"
+  />
   <table class="table table-hover table-bordered">
     <thead>
       <tr class="table-dark">
@@ -33,14 +39,26 @@ import { onMounted, ref } from 'vue'
 
 const contracts = ref([])
 
+const keyword = ref('')
+
 onMounted(() => {
   getContracts()
 })
 
 const getContracts = async () => {
-  await axios.get('http://localhost:3333/api/v1/contracts').then((response) => {
-    contracts.value = response.data.data.data
-  })
+  await axios
+    .get('http://localhost:3333/api/v1/contracts', {
+      params: {
+        keyword: keyword.value,
+      },
+    })
+    .then((response) => {
+      contracts.value = response.data.data.data
+    })
+}
+
+const search = async () => {
+  await getContracts()
 }
 
 const download = async (id) => {
@@ -56,7 +74,7 @@ const download = async (id) => {
 
   link.href = url
 
-  link.setAttribute('download', 'contract.docx')
+  link.setAttribute('download', `contract_${id}.docx`)
 
   document.body.appendChild(link)
 
