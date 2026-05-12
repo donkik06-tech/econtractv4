@@ -15,6 +15,13 @@ const routes = [
     name: 'company-index',
     component: () => import('@/components/CompaniesIndex.vue'),
   },
+
+  
+  {
+    path: '/reports',
+    name: 'report-index',
+    component: () => import('@/components/ReportIndex.vue'),
+  },
 ]
 
 const router = createRouter({
