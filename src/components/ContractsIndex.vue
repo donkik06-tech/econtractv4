@@ -7,36 +7,45 @@
     v-model="keyword"
     @keypress.enter="search"
   />
-  <table class="table table-hover table-bordered">
-    <thead>
-      <tr class="table-dark">
-        <th>#</th>
-        <th>Tên công ty</th>
-        <th>Mã số thuế</th>
-        <th>Mã LĐ</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="item in contracts" :key="item.contractId">
-        <td>{{ item.contractId }}</td>
-        <td>{{ item.company?.companyName }}</td>
-        <td>{{ item.company?.companyTaxcode }}</td>
-        <td>{{ item.contractCode }}</td>
-        <td>
-          <button class="btn btn-primary" @click="download(item.contractId)">
-            Download
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="position-relative">
+    <div v-if="loading" class="loading-overlay">
+      <div
+        class="spinner-border text-primary loading-spinner"
+        role="status"
+      ></div>
+    </div>
+    <table class="table table-hover table-bordered">
+      <thead>
+        <tr class="table-dark">
+          <th>#</th>
+          <th>Tên công ty</th>
+          <th>Mã số thuế</th>
+          <th>Mã LĐ</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="item in contracts" :key="item.contractId">
+          <td>{{ item.contractId }}</td>
+          <td>{{ item.company?.companyName }}</td>
+          <td>{{ item.company?.companyTaxcode }}</td>
+          <td>{{ item.contractCode }}</td>
+          <td>
+            <button class="btn btn-primary" @click="download(item.contractId)">
+              Download
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </template>
 
 <script setup>
 import axios from 'axios'
 import { onMounted, ref } from 'vue'
 
+const loading = ref(false)
 const contracts = ref([])
 
 const keyword = ref('')
@@ -46,6 +55,7 @@ onMounted(() => {
 })
 
 const getContracts = async () => {
+  loading.value = true
   await axios
     .get('http://localhost:3333/api/v1/contracts', {
       params: {
@@ -54,6 +64,7 @@ const getContracts = async () => {
     })
     .then((response) => {
       contracts.value = response.data.data.data
+      loading.value = false
     })
 }
 
@@ -62,6 +73,7 @@ const search = async () => {
 }
 
 const download = async (id) => {
+  loading.value = true
   const response = await axios.get(
     'http://localhost:3333/api/v1/contracts/download/' + id,
     {
@@ -79,5 +91,7 @@ const download = async (id) => {
   document.body.appendChild(link)
 
   link.click()
+
+  loading.value = false
 }
 </script>
