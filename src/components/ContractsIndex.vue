@@ -21,15 +21,17 @@
           <th>Tên công ty</th>
           <th>Mã số thuế</th>
           <th>Mã LĐ</th>
+          <th>Đầu mối</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="item in contracts" :key="item.contractId">
           <td>{{ item.contractId }}</td>
-          <td>{{ item.company?.companyName }}</td>
-          <td>{{ item.company?.companyTaxcode }}</td>
+          <td>{{ item.companyName }}</td>
+          <td>{{ item.companyTaxcode }}</td>
           <td>{{ item.contractCode }}</td>
+          <td>{{ item.customerName }}</td>
           <td>
             <button class="btn btn-primary" @click="download(item.contractId)">
               Download
