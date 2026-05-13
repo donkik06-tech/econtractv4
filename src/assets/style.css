@@ -2,11 +2,115 @@
 
 @import url('https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css');
 
+:root {
+  --sidebar-width: 280px;
+  --bg-body: #f8fafc;
+  --lumina-black: #0f172a;
+  --slate-500: #64748b;
+  --border-color: #e2e8f0;
+}
+
 body {
   font-family: 'Inter', sans-serif;
   background-color: #f8fafc;
   color: #1e293b;
-  font-size: 15px;
+}
+
+/* Sidebar Custom Styling */
+.sidebar {
+  width: 260px;
+  background: white;
+  border-right: 1px solid #e2e8f0;
+  height: 100vh;
+  position: fixed;
+  z-index: 100;
+}
+
+.nav-link {
+  color: #64748b;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+}
+
+.nav-link:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.nav-link.active {
+  background-color: #e2e8f0;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+/* Card Custom Styling */
+.custom-card {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.custom-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  border-color: #e2e8f0;
+}
+
+/* Header Sticky with Blur */
+.header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  background: rgba(248, 250, 252, 0.8);
+  backdrop-filter: blur(12px);
+  padding: 1.5rem 0;
+}
+
+.main-content {
+  margin-left: 260px;
+  padding: 0 2rem 2rem 2rem;
+}
+
+.btn-black {
+  background: #000;
+  color: white;
+  border-radius: 12px;
+  padding: 0.6rem 1.25rem;
+  font-weight: 600;
+  border: none;
+}
+
+.btn-black:hover {
+  background: #222;
+  color: white;
+}
+
+.badge-status {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  padding: 0.35em 0.65em;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+  .main-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
 }
 
 .loading-overlay {

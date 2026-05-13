@@ -1,7 +1,10 @@
 <template>
-  <div class="container">
+  <sidebarLeft />
+  <main class="main-content">
     <router-view />
-  </div>
+  </main>
 </template>
 
-<script setup></script>
+<script setup>
+import sidebarLeft from '@/components/layout/SidebarLeft'
+</script>
