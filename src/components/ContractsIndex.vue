@@ -13,7 +13,6 @@
         placeholder="Tìm tên công ty, mã hợp đồng..."
         enter-button="Tìm kiếm"
         size="large"
-        :loading="loading"
         @search="getContracts"
         class="search-box"
       />
@@ -26,13 +25,16 @@
           :key="item.contractId"
           class="contract-card"
           :bordered="false"
+          :loading="loaidng"
         >
           <div class="card-flex-container">
             <!-- Left: Thông tin chính (Chiếm nhiều không gian nhất) -->
             <div class="info-column main-info">
               <div class="title-row">
-                <h4 class="contract-name">{{ item.companyName }}</h4>
-                <span class="status-badge">Đang chạy</span>
+                <h3 class="contract-name">{{ item.companyName }}</h3>
+                <span class="status-badge">{{
+                  contractStatus(item.contractStatus)
+                }}</span>
               </div>
 
               <div class="meta-row">
@@ -51,11 +53,13 @@
                   {{
                     item.customerName
                       ? item.customerName.charAt(0).toUpperCase()
-                      : 'U'
+                      : "U"
                   }}
                 </div>
                 <span class="pic-label">Đầu mối:</span>
-                <span class="pic-value">{{ item.customerName }}</span>
+                <span class="pic-value"
+                  >{{ item.customerName }} - {{ item.customerPhone }}</span
+                >
               </div>
             </div>
 
@@ -65,6 +69,8 @@
               <div class="date-group">
                 <div class="stat-item mini">
                   <span class="stat-label">NGÀY LẬP</span>
+                 
+                 
                   <span class="stat-value text-xs">{{
                     formatDateTime(item.contractDate)
                   }}</span>
@@ -72,8 +78,8 @@
                 <div class="stat-item">
                   <span class="stat-label">THỜI HẠN</span>
                   <span class="stat-value text-xs">
-                    {{ formatDateTime(item.contractDateStart, 'DD/MM/YY') }} -
-                    {{ formatDateTime(item.contractDateEnd, 'DD/MM/YY') }}
+                    {{ formatDateTime(item.contractDateStart, "DD/MM/YY") }} -
+                    {{ formatDateTime(item.contractDateEnd, "DD/MM/YY") }}
                   </span>
                 </div>
               </div>
@@ -82,41 +88,19 @@
               <div class="finance-group">
                 <div class="stat-item">
                   <span class="stat-label">GIÁ TRỊ</span>
-                  <span class="stat-value highlight">{{
-                    formatCurrency(item.contractTotal)
-                  }}</span>
+                  <span class="stat-value highlight text-danger truncate-price">
+                    {{ formatCurrency(item.contractTotal) }}
+                  </span>
                 </div>
-                <!-- Badge Trạng thái thanh toán nằm ngay dưới số tiền -->
                 <a-tag
                   :color="item.paymentStatus === 'paid' ? 'success' : 'warning'"
                   class="payment-tag"
                 >
-                  {{
-                    item.paymentStatus === 'paid'
-                      ? 'Đã thanh toán'
-                      : 'Chờ thanh toán'
-                  }}
+                  {{ contractPayment(item.contractPayment) }}
                 </a-tag>
               </div>
             </div>
 
-            <!-- Middle: Thông số (Giá trị & Thời hạn) -->
-            <!-- <div class="info-column metrics-column">
-              <div class="stat-item">
-                <span class="stat-label">GIÁ TRỊ</span>
-                <span class="stat-value highlight">{{
-                  formatCurrency(item.contractTotal || 450000000)
-                }}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">THỜI HẠN</span>
-                <span class="stat-value">{{
-                  formatDateTime(item.contractDateEnd) || '20/12/2026'
-                }}</span>
-              </div>
-            </div> -->
-
-            <!-- Right: Hành động (Cố định bên phải) -->
             <div class="info-column action-column">
               <a-space size="middle">
                 <a-tooltip title="Tải xuống tài liệu">
@@ -160,58 +144,69 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import dayjs from 'dayjs'
-import axios from 'axios'
+import { onMounted, ref } from "vue"
+import dayjs from "dayjs"
+import axios from "axios"
 import {
   DownloadOutlined,
   EllipsisOutlined,
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
-} from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+} from "@ant-design/icons-vue"
+import { message } from "ant-design-vue"
+
+import utc from 'dayjs/plugin/utc';
+dayjs.extend(utc);
+
 
 const loading = ref(false)
 const contracts = ref([])
-const keyword = ref('')
+const keyword = ref("")
 
 onMounted(() => {
   getContracts()
 })
 
+
 const formatDateTime = (date) => {
-  if (!date) return 'Chưa cập nhật'
-  return dayjs(date).format('DD/MM/YYYY HH:mm:ss')
+  if (!date) return "---";
+
+  // .utc() sẽ giữ nguyên giá trị 00:00:00 của chuỗi gốc
+  const d = dayjs.utc(date); 
+  
+  const isMidnight = d.hour() === 0 && d.minute() === 0 && d.second() === 0;
+  
+  return d.format(isMidnight ? "DD/MM/YYYY" : "DD/MM/YYYY HH:mm:ss");
 }
 
 // Lấy danh sách từ API
 const getContracts = async () => {
   loading.value = true
   try {
-    const response = await axios.get('http://localhost:3333/api/v1/contracts', {
+    const response = await axios.get("http://localhost:3333/api/v1/contracts", {
       params: { keyword: keyword.value },
     })
     // Map đúng cấu trúc data của NestJS/Laravel bạn đang dùng
     contracts.value = response.data.data.data
   } catch (error) {
-    message.error('Không thể tải danh sách hợp đồng')
+    message.error("Không thể tải danh sách hợp đồng")
     console.error(error)
   } finally {
     loading.value = false
   }
 }
 const formatCurrency = (val) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
   }).format(val)
 }
 
 // Hàm màu avatar dựa trên tên
 const getAvatarColor = (name) => {
-  if (!name) return '#94a3b8'
-  const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981']
+  if (!name) return "#94a3b8"
+  const colors = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981"]
   return colors[name.length % colors.length]
 }
 // Xử lý tải file
@@ -220,22 +215,55 @@ const download = async (id) => {
     loading.value = true
     const response = await axios.get(
       `http://localhost:3333/api/v1/contracts/download/${id}`,
-      { responseType: 'blob' },
+      { responseType: "blob" },
     )
 
     const url = window.URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement('a')
+    const link = document.createElement("a")
     link.href = url
-    link.setAttribute('download', `contract_${id}.docx`)
+    link.setAttribute("download", `contract_${id}.docx`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
 
-    message.success('Bắt đầu tải file...')
+    message.success("Bắt đầu tải file...")
   } catch (error) {
-    message.error('Lỗi khi tải file')
+    message.error("Lỗi khi tải file")
   } finally {
     loading.value = false
+  }
+}
+
+const contractStatus = (status) => {
+  switch (status) {
+    case 1:
+      return "Đã trình kí"
+    case 0:
+      return "Mới tạo lập"
+    case 2:
+      return "Đã gửi KH"
+    case 3:
+      return "Hoàn thiện"
+    case 4:
+      return "Đã làm thanh toán"
+    default:
+      return "NaN"
+  }
+}
+
+const contractPayment = (status) => {
+  switch (status) {
+    case 1:
+      return "Đã nhận tiền nhưng chưa nộp tiền"
+    case 0:
+      return "Chưa thanh toán"
+    case 2:
+      return "Đã xuất hóa đơn nhưng chưa nộp tiền"
+    case 3:
+      return "Đã nộp tiền"
+
+    default:
+      return "Đã hoàn thiện và làm thanh toán"
   }
 }
 </script>
@@ -449,6 +477,76 @@ const download = async (id) => {
   }
   .search-box {
     width: 100%;
+  }
+}
+
+/* Cấu trúc lại khu vực thông số */
+.metrics-column {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24px; /* Giảm gap lại để tiết kiệm diện tích */
+  padding: 0 32px;
+  border-left: 1px solid #f1f5f9;
+  border-right: 1px solid #f1f5f9;
+  min-width: 350px; /* Khóa độ rộng tối thiểu cho cụm này */
+}
+
+/* Nhóm ngày tháng giữ cố định độ rộng */
+.date-group {
+  flex: 0 0 180px; /* Không cho co giãn, cố định 140px */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Nhóm tài chính chiếm phần còn lại và căn phải */
+.finance-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* Căn lề phải để nhìn chuyên nghiệp hơn */
+  text-align: right;
+  min-width: 0; /* Quan trọng để truncate hoạt động */
+}
+
+.stat-value {
+  display: block;
+  line-height: 1.4;
+}
+
+/* Xử lý khi tiền quá dài */
+.truncate-price {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px; /* Tùy chỉnh độ rộng tối đa của cột tiền */
+  font-size: 15px; /* Giảm nhẹ size nếu tiền quá lớn */
+}
+
+.text-nowrap {
+  white-space: nowrap;
+}
+
+.payment-tag {
+  margin-top: 4px;
+  margin-right: 0; /* Đảm bảo tag căn lề phải chuẩn */
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Responsive cho mobile */
+@media (max-width: 992px) {
+  .metrics-column {
+    min-width: 100%;
+    border: none;
+    padding: 16px 0;
+    justify-content: space-between;
+  }
+  .finance-group {
+    align-items: flex-end;
   }
 }
 </style>
