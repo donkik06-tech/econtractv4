@@ -11,9 +11,13 @@
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', sans-serif !important;
   background-color: #f8fafc;
   color: #1e293b;
+  font-weight: 400;
+}
+table{
+  font-family: 'Inter', sans-serif !important;
 }
 
 /* Sidebar Custom Styling */
@@ -107,6 +111,7 @@ body {
   .sidebar {
     display: none;
   }
+
   .main-content {
     margin-left: 0;
     padding: 1rem;

@@ -1,26 +1,38 @@
-import { createRouter, createWebHistory } from 'vue-router'
-
-// import HomeView from '@/views/HomeView.vue'
-// import AboutView from '@/views/AboutView.vue'
-
+import { createRouter, createWebHistory } from "vue-router"
 const routes = [
   {
-    path: '/contracts',
-    name: 'contract-index',
-    component: () => import('@/components/ContractsIndex.vue'),
+      path:"/",
+      name: "Home",
+      component: ()=>import("@/components/HelloWorld.vue")
+  },
+  {
+    path: "/contracts",
+    name: "Contracts",
+    children: [
+      {
+        path: "",
+        name: "contract-index",
+        component: () => import("@/components/ContractsIndex.vue"),
+      },
+
+      {
+        path:"kaban",
+        name: "kaban",
+        component: ()=>import("@/components/contracts/ContractUpdate.vue")
+      }
+    ],
   },
 
   {
-    path: '/companies',
-    name: 'company-index',
-    component: () => import('@/components/CompaniesIndex.vue'),
+    path: "/companies",
+    name: "company-index",
+    component: () => import("@/components/CompaniesIndex.vue"),
   },
 
-  
   {
-    path: '/reports',
-    name: 'report-index',
-    component: () => import('@/components/ReportIndex.vue'),
+    path: "/reports",
+    name: "report-index",
+    component: () => import("@/components/ReportIndex.vue"),
   },
 ]
 

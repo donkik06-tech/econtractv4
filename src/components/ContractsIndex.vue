@@ -1,146 +1,140 @@
 <template>
-  <div class="contract-container">
-    <!-- Header: Tách biệt rõ ràng Title và Search -->
-    <div class="header-section">
-      <div class="title-group">
-        <h1 class="page-title">Quản lý Hợp đồng</h1>
-        <p class="page-subtitle">
-          Theo dõi và quản lý các thỏa thuận pháp lý của doanh nghiệp
-        </p>
-      </div>
-      <a-input-search
-        v-model:value="keyword"
-        placeholder="Tìm tên công ty, mã hợp đồng..."
-        enter-button="Tìm kiếm"
-        size="large"
-        @search="getContracts"
-        class="search-box"
-      />
-    </div>
+  <a-page-header title="DANH SÁCH HỢP ĐỒNG" @back="() => {}" />
 
-    <a-spin :spinning="loading" tip="Đang tải dữ liệu...">
-      <div class="card-list">
-        <a-card
-          v-for="item in contracts"
-          :key="item.contractId"
-          class="contract-card"
-          :bordered="false"
-          :loading="loaidng"
+  <a-form layout="vertical" @submit.prevent="getContracts">
+    <a-row :gutter="[12, 12]" align="bottom">
+      <!-- Luôn hiện ô tìm kiếm chính này -->
+      <a-col :xs="24" :md="12" :lg="14">
+        <a-form-item label="Từ khóa tìm kiếm" class="mb-0">
+          <a-input
+            size="large"
+            v-model:value="keyword"
+            placeholder="Nhập mã số thuế hoặc tên công ty để tìm kiếm..."
+            allow-clear
+          />
+        </a-form-item>
+      </a-col>
+
+      <!-- Hàng nút bấm chính kèm nút Mở rộng -->
+      <a-col :xs="24" :md="12" :lg="10" style="text-align: right">
+        <a-space :size="8">
+          <a-button size="large" @click="getContracts()">Đặt lại</a-button>
+          <a-button
+            type="primary"
+            size="large"
+            html-type="submit"
+            :loading="loading"
+            >Tìm kiếm</a-button
+          >
+
+          <!-- Nút trigger giả lập nâng cao bằng Antd Link -->
+          <a-button
+            type="link"
+            @click="isAdvancedSearchVisible = !isAdvancedSearchVisible"
+          >
+            {{ isAdvancedSearchVisible ? "Thu gọn" : "Bộ lọc nâng cao" }}
+            <UpOutlined v-if="isAdvancedSearchVisible" />
+            <DownOutlined v-else />
+          </a-button>
+        </a-space>
+      </a-col>
+    </a-row>
+
+    <!-- Đoạn này có thể dùng CSS ẩn/hiển thị hoặc để tạm để test layout -->
+    <a-row
+      :gutter="[12, 12]"
+      align="bottom"
+      class="mt-3"
+      v-show="isAdvancedSearchVisible"
+    >
+      <a-col :span="6">
+        <a-form-item label="Thời gian hợp đồng" class="mb-0">
+          <a-range-picker
+            size="large"
+            style="width: 100%"
+            format="DD/MM/YYYY"
+          />
+        </a-form-item>
+      </a-col>
+      <a-col :span="6">
+        <a-form-item label="Đầu mối" class="mb-0">
+          <a-input size="large" placeholder="Tên đầu mối..." allow-clear />
+        </a-form-item>
+      </a-col>
+      <a-col :span="6">
+        <a-form-item label="Trạng thái" class="mb-0">
+          <a-select size="large" placeholder="Tất cả" allow-clear />
+        </a-form-item>
+      </a-col>
+      <a-col :span="6">
+        <a-form-item label="Thanh toán" class="mb-0">
+          <a-select size="large" placeholder="Tất cả" allow-clear />
+        </a-form-item>
+      </a-col>
+    </a-row>
+  </a-form>
+
+
+  <a-table
+    :columns="columns"
+    :data-source="contracts"
+    :loading="loading"
+    :pagination="{
+      pageSize: 100,
+    }"
+  >
+    <template #bodyCell="{ column, record }">
+      <template v-if="column.key == 'companyName'">
+        <strong class="text-primary">{{ record.companyName }}</strong>
+      </template>
+      <template v-if="column.key == 'status'">
+        <a-tag color="success" class="payment-tag fw-bold text-wrap">
+          {{ contractPayment(record.contractPayment) }}
+        </a-tag>
+      </template>
+      <template v-if="column.key == 'payment'">
+        <a-tag color="warning" class="payment-tag fw-bold text-wrap">
+          {{ contractPayment(record.contractPayment) }}
+        </a-tag>
+      </template>
+      <templale v-if="column.key == 'contractTotal'">
+        <strong class="text-danger">{{
+          formatCurrency(record.contractTotal)
+        }}</strong>
+      </templale>
+      <template v-if="column.key == 'action'">
+        <a-dropdown
+          trigger="click"
+          placement="bottomLeft"
+          :arrow="{ pointAtCenter: true }"
         >
-          <div class="card-flex-container">
-            <!-- Left: Thông tin chính (Chiếm nhiều không gian nhất) -->
-            <div class="info-column main-info">
-              <div class="title-row">
-                <h3 class="contract-name">{{ item.companyName }}</h3>
-                <span class="status-badge">{{
-                  contractStatus(item.contractStatus)
-                }}</span>
-              </div>
-
-              <div class="meta-row">
-                <span class="tax-code">MST: {{ item.companyTaxcode }}</span>
-                <span class="divider-dot"></span>
-                <span class="contract-id">#{{ item.contractCode }}</span>
-              </div>
-
-              <div class="pic-row">
-                <div
-                  class="pic-avatar-mini"
-                  :style="{
-                    backgroundColor: getAvatarColor(item.customerName),
-                  }"
+          <a-button type="link" @click.prevent>
+            <DownOutlined />
+          </a-button>
+          <template #overlay>
+            <a-menu>
+              <a-menu-item>
+                <a-space :size="8" align="center" class="fw-bold">
+                  <EyeOutlined />
+                  <span>Xem chi tiết</span>
+                </a-space>
+              </a-menu-item>
+              <a-menu-item>
+                <a-space :size="8" class="fw-bold" align="center"
+                  ><EditOutlined />Cập nhật hợp đồng</a-space
                 >
-                  {{
-                    item.customerName
-                      ? item.customerName.charAt(0).toUpperCase()
-                      : "U"
-                  }}
-                </div>
-                <span class="pic-label">Đầu mối:</span>
-                <span class="pic-value"
-                  >{{ item.customerName }} - {{ item.customerPhone }}</span
+              </a-menu-item>
+              <a-menu-item>
+                <a-space :size="8" class="fw-bold"
+                  ><DeleteOutlined />Hủy hợp đồng</a-space
                 >
-              </div>
-            </div>
-
-            <!-- Middle: Thông số (Nâng cấp thêm nhiều thông tin) -->
-            <div class="info-column metrics-column">
-              <!-- Nhóm Ngày tháng (Tận dụng Vertical Space) -->
-              <div class="date-group">
-                <div class="stat-item mini">
-                  <span class="stat-label">NGÀY LẬP</span>
-                 
-                 
-                  <span class="stat-value text-xs">{{
-                    formatDateTime(item.contractDate)
-                  }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">THỜI HẠN</span>
-                  <span class="stat-value text-xs">
-                    {{ formatDateTime(item.contractDateStart, "DD/MM/YY") }} -
-                    {{ formatDateTime(item.contractDateEnd, "DD/MM/YY") }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Nhóm Tài chính & Thanh toán -->
-              <div class="finance-group">
-                <div class="stat-item">
-                  <span class="stat-label">GIÁ TRỊ</span>
-                  <span class="stat-value highlight text-danger truncate-price">
-                    {{ formatCurrency(item.contractTotal) }}
-                  </span>
-                </div>
-                <a-tag
-                  :color="item.paymentStatus === 'paid' ? 'success' : 'warning'"
-                  class="payment-tag"
-                >
-                  {{ contractPayment(item.contractPayment) }}
-                </a-tag>
-              </div>
-            </div>
-
-            <div class="info-column action-column">
-              <a-space size="middle">
-                <a-tooltip title="Tải xuống tài liệu">
-                  <a-button
-                    type="light"
-                    class="btn-download"
-                    @click="download(item.contractId)"
-                  >
-                    <template #icon><DownloadOutlined /></template>
-                  </a-button>
-                </a-tooltip>
-
-                <a-dropdown :trigger="['click']" placement="bottomRight">
-                  <a-button type="text" class="btn-more">
-                    <template #icon><EllipsisOutlined /></template>
-                  </a-button>
-                  <template #overlay>
-                    <a-menu class="modern-menu">
-                      <a-menu-item key="view"
-                        ><EyeOutlined /> Xem chi tiết</a-menu-item
-                      >
-                      <a-menu-item key="edit"
-                        ><EditOutlined /> Cập nhật</a-menu-item
-                      >
-                      <a-menu-divider />
-                      <a-menu-item key="delete" danger
-                        ><DeleteOutlined /> Hủy bỏ</a-menu-item
-                      >
-                    </a-menu>
-                  </template>
-                </a-dropdown>
-              </a-space>
-            </div>
-          </div>
-        </a-card>
-
-        <a-empty v-if="contracts.length === 0 && !loading" />
-      </div>
-    </a-spin>
-  </div>
+              </a-menu-item>
+            </a-menu>
+          </template>
+        </a-dropdown>
+      </template>
+    </template>
+  </a-table>
 </template>
 
 <script setup>
@@ -148,36 +142,37 @@ import { onMounted, ref } from "vue"
 import dayjs from "dayjs"
 import axios from "axios"
 import {
-  DownloadOutlined,
-  EllipsisOutlined,
+  DownOutlined,
+  UpOutlined,
+  // EllipsisOutlined,
+  // SearchOutlined,
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
 } from "@ant-design/icons-vue"
 import { message } from "ant-design-vue"
 
-import utc from 'dayjs/plugin/utc';
-dayjs.extend(utc);
-
+import utc from "dayjs/plugin/utc"
+dayjs.extend(utc)
 
 const loading = ref(false)
 const contracts = ref([])
 const keyword = ref("")
+const isAdvancedSearchVisible = ref(false)
 
 onMounted(() => {
   getContracts()
 })
 
-
 const formatDateTime = (date) => {
-  if (!date) return "---";
+  if (!date) return "---"
 
   // .utc() sẽ giữ nguyên giá trị 00:00:00 của chuỗi gốc
-  const d = dayjs.utc(date); 
-  
-  const isMidnight = d.hour() === 0 && d.minute() === 0 && d.second() === 0;
-  
-  return d.format(isMidnight ? "DD/MM/YYYY" : "DD/MM/YYYY HH:mm:ss");
+  const d = dayjs.utc(date)
+
+  const isMidnight = d.hour() === 0 && d.minute() === 0 && d.second() === 0
+
+  return d.format(isMidnight ? "DD/MM/YYYY" : "DD/MM/YYYY HH:mm:ss")
 }
 
 // Lấy danh sách từ API
@@ -204,52 +199,52 @@ const formatCurrency = (val) => {
 }
 
 // Hàm màu avatar dựa trên tên
-const getAvatarColor = (name) => {
-  if (!name) return "#94a3b8"
-  const colors = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981"]
-  return colors[name.length % colors.length]
-}
+// const getAvatarColor = (name) => {
+//   if (!name) return "#94a3b8"
+//   const colors = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981"]
+//   return colors[name.length % colors.length]
+// }
 // Xử lý tải file
-const download = async (id) => {
-  try {
-    loading.value = true
-    const response = await axios.get(
-      `http://localhost:3333/api/v1/contracts/download/${id}`,
-      { responseType: "blob" },
-    )
+// const download = async (id) => {
+//   try {
+//     loading.value = true
+//     const response = await axios.get(
+//       `http://localhost:3333/api/v1/contracts/download/${id}`,
+//       { responseType: "blob" },
+//     )
 
-    const url = window.URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement("a")
-    link.href = url
-    link.setAttribute("download", `contract_${id}.docx`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+//     const url = window.URL.createObjectURL(new Blob([response.data]))
+//     const link = document.createElement("a")
+//     link.href = url
+//     link.setAttribute("download", `contract_${id}.docx`)
+//     document.body.appendChild(link)
+//     link.click()
+//     document.body.removeChild(link)
 
-    message.success("Bắt đầu tải file...")
-  } catch (error) {
-    message.error("Lỗi khi tải file")
-  } finally {
-    loading.value = false
-  }
-}
+//     message.success("Bắt đầu tải file...")
+//   } catch (error) {
+//     message.error("Lỗi khi tải file")
+//   } finally {
+//     loading.value = false
+//   }
+// }
 
-const contractStatus = (status) => {
-  switch (status) {
-    case 1:
-      return "Đã trình kí"
-    case 0:
-      return "Mới tạo lập"
-    case 2:
-      return "Đã gửi KH"
-    case 3:
-      return "Hoàn thiện"
-    case 4:
-      return "Đã làm thanh toán"
-    default:
-      return "NaN"
-  }
-}
+// const contractStatus = (status) => {
+//   switch (status) {
+//     case 1:
+//       return "Đã trình kí"
+//     case 0:
+//       return "Mới tạo lập"
+//     case 2:
+//       return "Đã gửi KH"
+//     case 3:
+//       return "Hoàn thiện"
+//     case 4:
+//       return "Đã làm thanh toán"
+//     default:
+//       return "NaN"
+//   }
+// }
 
 const contractPayment = (status) => {
   switch (status) {
@@ -266,287 +261,53 @@ const contractPayment = (status) => {
       return "Đã hoàn thiện và làm thanh toán"
   }
 }
+
+const columns = [
+  {
+    title: "#",
+    key: "contractId",
+    dataIndex: "contractId",
+  },
+  {
+    title: " Tên thuê bao",
+    dataIndex: "companyName",
+    key: "companyName",
+  },
+  {
+    title: "Mã số thuế",
+    dataIndex: "companyTaxcode",
+  },
+  {
+    title: "Mã LĐ",
+    dataIndex: "contractCode",
+  },
+  {
+    title: "Ngày HĐ",
+    dataIndex: "contractDate",
+    customRender: ({ record }) => formatDateTime(record.contractDate),
+  },
+  {
+    title: "Trạng thái",
+    dataIndex: "contractStatus",
+    key: "status",
+  },
+  {
+    title: "Thanh toán",
+    dataIndex: "contractPayment",
+    key: "payment",
+  },
+  {
+    title: "Đầu mối",
+    dataIndex: "customerName",
+  },
+  {
+    title: "Giá trị",
+    dataIndex: "contractTotal",
+    key: "contractTotal",
+  },
+
+  {
+    key: "action",
+  },
+]
 </script>
-
-<style scoped>
-/* Container & Header */
-.contract-container {
-  /* padding: 40px 20px;
-  max-width: 1100px;
-  margin: 0 auto;
-  background-color: #f8fafc;
-  min-height: 100vh; */
-}
-
-.header-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 32px;
-}
-
-.page-title {
-  font-size: 28px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0;
-  letter-spacing: -0.025em;
-}
-
-.page-subtitle {
-  color: #64748b;
-  margin: 4px 0 0 0;
-}
-
-.search-box {
-  width: 380px;
-}
-
-/* Card Styling */
-.contract-card {
-  margin-bottom: 16px;
-  border-radius: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.contract-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 25px -5px rgba(0, 0, 0, 0.05);
-}
-
-.card-flex-container {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-/* Columns */
-.info-column {
-  display: flex;
-  flex-direction: column;
-}
-
-.main-info {
-  flex: 1; /* Chiếm tối đa không gian */
-}
-
-/* Chi tiết bên trong */
-.title-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
-}
-
-.contract-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0;
-}
-
-.status-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 8px;
-  background: #f0fdf4;
-  color: #166534;
-  border: 1px solid #dcfce7;
-  border-radius: 6px;
-  text-transform: uppercase;
-}
-
-.meta-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #94a3b8;
-  margin-bottom: 12px;
-}
-
-.divider-dot {
-  width: 4px;
-  height: 4px;
-  background: #cbd5e1;
-  border-radius: 50%;
-}
-
-/* PIC Row */
-.pic-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pic-avatar-mini {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
-  color: white;
-}
-
-.pic-label {
-  font-size: 12px;
-  color: #64748b;
-}
-
-.pic-value {
-  font-size: 12px;
-  font-weight: 600;
-  color: #334155;
-}
-
-/* Metrics Column */
-.metrics-column {
-  flex-direction: row;
-  gap: 48px;
-  padding: 0 40px;
-  border-left: 1px dashed #e2e8f0;
-  border-right: 1px dashed #e2e8f0;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  min-width: 100px;
-}
-
-.stat-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: #94a3b8;
-  letter-spacing: 0.05em;
-  margin-bottom: 4px;
-}
-
-.stat-value {
-  font-size: 14px;
-  font-weight: 700;
-  color: #334155;
-}
-
-.stat-value.highlight {
-  color: #0f172a;
-}
-
-/* Buttons */
-.btn-download {
-  background: #eff6ff;
-  color: #2563eb;
-  border: none;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-download:hover {
-  background: #dbeafe;
-}
-
-.btn-more {
-  font-size: 18px;
-  color: #94a3b8;
-}
-
-/* Responsive */
-@media (max-width: 992px) {
-  .card-flex-container {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .metrics-column {
-    border: none;
-    padding: 16px 0;
-    width: 100%;
-    justify-content: space-between;
-  }
-  .header-section {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 20px;
-  }
-  .search-box {
-    width: 100%;
-  }
-}
-
-/* Cấu trúc lại khu vực thông số */
-.metrics-column {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 24px; /* Giảm gap lại để tiết kiệm diện tích */
-  padding: 0 32px;
-  border-left: 1px solid #f1f5f9;
-  border-right: 1px solid #f1f5f9;
-  min-width: 350px; /* Khóa độ rộng tối thiểu cho cụm này */
-}
-
-/* Nhóm ngày tháng giữ cố định độ rộng */
-.date-group {
-  flex: 0 0 180px; /* Không cho co giãn, cố định 140px */
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Nhóm tài chính chiếm phần còn lại và căn phải */
-.finance-group {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end; /* Căn lề phải để nhìn chuyên nghiệp hơn */
-  text-align: right;
-  min-width: 0; /* Quan trọng để truncate hoạt động */
-}
-
-.stat-value {
-  display: block;
-  line-height: 1.4;
-}
-
-/* Xử lý khi tiền quá dài */
-.truncate-price {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 150px; /* Tùy chỉnh độ rộng tối đa của cột tiền */
-  font-size: 15px; /* Giảm nhẹ size nếu tiền quá lớn */
-}
-
-.text-nowrap {
-  white-space: nowrap;
-}
-
-.payment-tag {
-  margin-top: 4px;
-  margin-right: 0; /* Đảm bảo tag căn lề phải chuẩn */
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Responsive cho mobile */
-@media (max-width: 992px) {
-  .metrics-column {
-    min-width: 100%;
-    border: none;
-    padding: 16px 0;
-    justify-content: space-between;
-  }
-  .finance-group {
-    align-items: flex-end;
-  }
-}
-</style>
